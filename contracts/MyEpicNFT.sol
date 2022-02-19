@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -6,76 +6,70 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 import "hardhat/console.sol";
 
-import { Base64 } from "./libraries/Base64.sol";
 
-contract MyEpicNFT is ERC721URIStorage {
+contract MyEpicNFT is ERC721URIStorage, Ownable {
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
 
-  // This is our SVG code. All we need to change is the word that's displayed. Everything else stays the same.
-  // So, we make a baseSvg variable here that all our NFTs can use.
-  string baseSvg = "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: white; font-family: serif; font-size: 24px; }</style><rect width='100%' height='100%' fill='black' /><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
+  uint256 public maxSupply = 5; // This NFT is deliberately a very limited release. Two will be premined.
+  uint256 public cost = 1; // Owner can change update cost at any time.
 
-  // I create three arrays, each with their own theme of random words.
-  // Pick some random funny words, names of anime characters, foods you like, whatever! 
-  string[] firstWords = ["Metamate", "dinobabies", "brochet", "Flounce", "sanctimommy", "tactical spoon"];
-  string[] secondWords = ["permabear", "Dracula Sneeze", "Toilet Read", "Sunday Scaries", "Toxic Positivity", "sober curious"];
-  string[] thirdWords = ["deja-poo", "bridge troll", "jomo", "holiday pants", "Maskfishing", "dumbphone"];
   event NewEpicNFTMinted(address sender, uint256 tokenId);
+  event LolUpdatedURI(address sender, uint256 tokenId);
 
   constructor() ERC721 ("LolNFT", "LOL") {
-    console.log("This is my NFT contract. Woah!");
+    console.log("Lolware.net NFT Project");
   }
 
-  // I create a function to randomly pick a word from each array.
-  function pickRandomFirstWord(uint256 tokenId) public view returns (string memory) {
-    // I seed the random generator. More on this in the lesson. 
-    uint256 rand = random(string(abi.encodePacked("FIRST_WORD", Strings.toString(tokenId))));
-    // Squash the # between 0 and the length of the array to avoid going out of bounds.
-    rand = rand % firstWords.length;
-    return firstWords[rand];
+  function buyURLUpdate(uint tokenId, string memory tokenURI) public payable {
+    require(msg.value >= cost, "insufficient funds");
+    // Get all the JSON metadata in place and base64 encode it.
+    string memory json = Base64.encode(
+        bytes(
+            string(
+                abi.encodePacked(
+                    '{"name": "LolNFT", "description": "A hilarious meme.", "image": "',
+                    tokenURI,
+                    '"}'
+                )
+            )
+        )
+    );
+
+    string memory finalTokenUri = string(
+        abi.encodePacked("data:application/json;base64,", json)
+    );
+
+    _setTokenURI(tokenId, finalTokenUri);
+
+    console.log("\n--------------------");
+    console.log(finalTokenUri);
+    console.log("--------------------\n");
+  
+    console.log("Updated the URI on token %s", tokenId);
+    emit LolUpdatedURI(msg.sender, tokenId);
+
+  }
+  
+  function setCost(uint256 _newCost) public onlyOwner {
+    cost = _newCost;
   }
 
-  function pickRandomSecondWord(uint256 tokenId) public view returns (string memory) {
-    uint256 rand = random(string(abi.encodePacked("SECOND_WORD", Strings.toString(tokenId))));
-    rand = rand % secondWords.length;
-    return secondWords[rand];
-  }
-
-  function pickRandomThirdWord(uint256 tokenId) public view returns (string memory) {
-    uint256 rand = random(string(abi.encodePacked("THIRD_WORD", Strings.toString(tokenId))));
-    rand = rand % thirdWords.length;
-    return thirdWords[rand];
-  }
-
-  function random(string memory input) internal pure returns (uint256) {
-      return uint256(keccak256(abi.encodePacked(input)));
-  }
-
-  function makeAnEpicNFT() public {
+  function makeAnEpicNFT(string memory tokenURI) public {
     uint256 newItemId = _tokenIds.current();
-
-    // We go and randomly grab one word from each of the three arrays.
-    string memory first = pickRandomFirstWord(newItemId);
-    string memory second = pickRandomSecondWord(newItemId);
-    string memory third = pickRandomThirdWord(newItemId);
-    string memory combinedWord = string(abi.encodePacked(first, second, third));
-
-    string memory finalSvg = string(abi.encodePacked(baseSvg, combinedWord, "</text></svg>"));
+    require(newItemId < maxSupply, "Maximum allowed amount of tokens already minted"); // tokenIDs start at 0. If newItemID is 5, it will be the sixth token
 
     // Get all the JSON metadata in place and base64 encode it.
     string memory json = Base64.encode(
         bytes(
             string(
                 abi.encodePacked(
-                    '{"name": "',
-                    // We set the title of our NFT as the generated word.
-                    combinedWord,
-                    '", "description": "A hilarious meme.", "image": "data:image/svg+xml;base64,',
-                    // We add data:image/svg+xml;base64 and then append our base64 encode our svg.
-                    Base64.encode(bytes(finalSvg)),
+                    '{"name": "LolNFT", "description": "A hilarious meme.", "image": "',
+                    tokenURI,
                     '"}'
                 )
             )
@@ -92,7 +86,6 @@ contract MyEpicNFT is ERC721URIStorage {
 
     _safeMint(msg.sender, newItemId);
   
-    // We'll be setting the tokenURI later!
     _setTokenURI(newItemId, finalTokenUri);
   
     _tokenIds.increment();

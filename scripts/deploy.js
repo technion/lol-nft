@@ -5,13 +5,17 @@ const main = async () => {
   console.log("Contract deployed to:", nftContract.address);
 
   // Call the function.
-  let txn = await nftContract.makeAnEpicNFT();
+  let txn = await nftContract.makeAnEpicNFT("https://i.imgur.com/OIyczFs.jpeg");
   // Wait for it to be mined.
   await txn.wait();
 
-  // Mint another NFT for fun.
-  txn = await nftContract.makeAnEpicNFT();
+  // Mint a second cat picture
+  txn = await nftContract.makeAnEpicNFT("https://i.imgur.com/AD3MbBi.jpeg");
   // Wait for it to be mined.
+  await txn.wait();
+
+  // Change the URL on the second token
+  txn = await nftContract.buyURLUpdate(0, "https://i.imgur.com/utzTCyo.png", { value: 4 }); // Pays value in wei
   await txn.wait();
 };
 
