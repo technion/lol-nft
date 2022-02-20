@@ -11,14 +11,14 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 import "hardhat/console.sol";
 
 
-contract MyEpicNFT is ERC721URIStorage, Ownable {
+contract LolNFT is ERC721URIStorage, Ownable {
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
 
   uint256 public maxSupply = 5; // This NFT is deliberately a very limited release. Two will be premined.
   uint256 public cost = 1; // Owner can change update cost at any time.
 
-  event NewEpicNFTMinted(address sender, uint256 tokenId);
+  event NewLolNFTMinted(address sender, uint256 tokenId);
   event LolUpdatedURI(address sender, uint256 tokenId);
 
   constructor() ERC721 ("LolNFT", "LOL") {
@@ -90,6 +90,6 @@ contract MyEpicNFT is ERC721URIStorage, Ownable {
   
     _tokenIds.increment();
     console.log("An NFT w/ ID %s has been minted to %s", newItemId, msg.sender);
-    emit NewEpicNFTMinted(msg.sender, newItemId);
+    emit NewLolNFTMinted(msg.sender, newItemId);
   }
 }

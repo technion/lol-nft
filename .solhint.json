@@ -1,0 +1,11 @@
+  {
+    "extends": "solhint:recommended",
+    "plugins": [],
+    "rules": {
+      "indent": 4,
+      "compiler-version": ["error","^0.8.4"],
+      "func-visibility": ["warn",{"ignoreConstructors":true}],
+      "mark-callable-contracts": "off",
+      "quotes": ["off"]
+    }
+  }
