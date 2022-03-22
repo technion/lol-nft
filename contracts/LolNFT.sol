@@ -15,11 +15,12 @@ contract LolNFT is ERC721URIStorage, Ownable {
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
 
-  uint256 public maxSupply = 5; // This NFT is deliberately a very limited release. Two will be premined.
+  uint256 public constant MAXSUPPLY = 2; // This NFT is deliberately a very limited release. Two will be premined.
   uint256 public cost = 1; // Owner can change update cost at any time.
 
   event NewLolNFTMinted(address sender, uint256 tokenId);
   event LolUpdatedURI(address sender, uint256 tokenId);
+  event PayoutSent(address sender, uint256 amount);
 
   constructor() ERC721 ("LolNFT", "LOL") {
     console.log("Lolware.net NFT Project");
@@ -27,30 +28,10 @@ contract LolNFT is ERC721URIStorage, Ownable {
 
   function buyURLUpdate(uint tokenId, string memory tokenURI) public payable {
     require(msg.value >= cost, "insufficient funds");
-    // Get all the JSON metadata in place and base64 encode it.
-    string memory json = Base64.encode(
-        bytes(
-            string(
-                abi.encodePacked(
-                    '{"name": "LolNFT", "description": "A hilarious meme.", "image": "',
-                    tokenURI,
-                    '"}'
-                )
-            )
-        )
-    );
 
-    string memory finalTokenUri = string(
-        abi.encodePacked("data:application/json;base64,", json)
-    );
+    _setTokenURI(tokenId, tokenURI);
 
-    _setTokenURI(tokenId, finalTokenUri);
-
-    console.log("\n--------------------");
-    console.log(finalTokenUri);
-    console.log("--------------------\n");
-  
-    console.log("Updated the URI on token %s", tokenId);
+    console.log("Updated the URI on token %s to %s", tokenId, tokenURI);
     emit LolUpdatedURI(msg.sender, tokenId);
 
   }
@@ -59,37 +40,24 @@ contract LolNFT is ERC721URIStorage, Ownable {
     cost = _newCost;
   }
 
-  function makeAnEpicNFT(string memory tokenURI) public {
+  function makeALolNFT(string memory tokenURI) public {
     uint256 newItemId = _tokenIds.current();
-    require(newItemId < maxSupply, "Maximum allowed amount of tokens already minted"); // tokenIDs start at 0. If newItemID is 5, it will be the sixth token
-
-    // Get all the JSON metadata in place and base64 encode it.
-    string memory json = Base64.encode(
-        bytes(
-            string(
-                abi.encodePacked(
-                    '{"name": "LolNFT", "description": "A hilarious meme.", "image": "',
-                    tokenURI,
-                    '"}'
-                )
-            )
-        )
-    );
-
-    string memory finalTokenUri = string(
-        abi.encodePacked("data:application/json;base64,", json)
-    );
-
-    console.log("\n--------------------");
-    console.log(finalTokenUri);
-    console.log("--------------------\n");
+    require(newItemId < MAXSUPPLY, "Exceeds maximum tokens"); // tokenIDs start at 0. 
 
     _safeMint(msg.sender, newItemId);
   
-    _setTokenURI(newItemId, finalTokenUri);
+    _setTokenURI(newItemId, tokenURI);
   
     _tokenIds.increment();
     console.log("An NFT w/ ID %s has been minted to %s", newItemId, msg.sender);
     emit NewLolNFTMinted(msg.sender, newItemId);
   }
+
+  function payoutWallet() public onlyOwner {
+    uint256 credit = address(this).balance;
+    (bool success, ) = payable(msg.sender).call{value: credit}("");
+    require(success, "Failed to send Ether");
+    emit PayoutSent(msg.sender, credit);
+  }
+
 }

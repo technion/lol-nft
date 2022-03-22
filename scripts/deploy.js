@@ -1,22 +1,38 @@
+const btoa = (text) => {
+  // Fill for function only present in browser
+  return Buffer.from(text, 'binary').toString('base64');
+}
+
+const encodeTokenURI = (uri) => {
+  const metadata = {
+    name: "LolNFT",
+    description: "My hilarious meme",
+    image: uri
+  }
+  return "data:application/json;base64," + btoa(JSON.stringify(metadata));
+}
+
 const main = async () => {
   const nftContractFactory = await hre.ethers.getContractFactory('LolNFT');
+
+  const [deployer] = await hre.ethers.getSigners();
+  console.log(
+      "Deploying the contracts with the account:",
+      await deployer.getAddress()
+  );
+
+  console.log("Account balance:", (await deployer.getBalance()).toString());
+
   const nftContract = await nftContractFactory.deploy();
   await nftContract.deployed();
   console.log("Contract deployed to:", nftContract.address);
 
   // Call the function.
-  let txn = await nftContract.makeAnEpicNFT("https://i.imgur.com/OIyczFs.jpeg");
+  let txn = await nftContract.makeALolNFT(encodeTokenURI("https://i.imgur.com/OIyczFs.jpeg"));
   // Wait for it to be mined.
   await txn.wait();
 
-  // Mint a second cat picture
-  txn = await nftContract.makeAnEpicNFT("https://i.imgur.com/AD3MbBi.jpeg");
-  // Wait for it to be mined.
-  await txn.wait();
-
-  // Change the URL on the second token
-  txn = await nftContract.buyURLUpdate(0, "https://i.imgur.com/utzTCyo.png", { value: 4 }); // Pays value in wei
-  await txn.wait();
+  
 };
 
 const runMain = async () => {
